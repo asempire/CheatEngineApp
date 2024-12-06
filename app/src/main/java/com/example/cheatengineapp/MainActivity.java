@@ -1,6 +1,13 @@
 package com.example.cheatengineapp;
 
+
+import static com.example.cheatengineapp.Helpers.clearTableExceptHeader;
+import static com.example.cheatengineapp.Helpers.getThirdPartyPackages;
+import static com.example.cheatengineapp.Helpers.isRootGiven;
+
 import android.app.ActivityManager;
+import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -26,42 +33,16 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
+import com.example.cheatengineapp.Helpers.*;
 public class MainActivity extends AppCompatActivity {
 
-
+    private TableRow selectedRow;
+    //private Button SelectItem = findViewById(R.id.SelectItem);
 
     // Functions to help in detecting root
     //https://stackoverflow.com/a/39420232
 
-    public static boolean isRootAvailable(){
-        for(String pathDir : System.getenv("PATH").split(":")){
-            if(new File(pathDir, "su").exists()) {
-                return true;
-            }
-        }
-        return false;
-    }
-    public static boolean isRootGiven(){
-        if (isRootAvailable()) {
-            Process process = null;
-            try {
-                process = Runtime.getRuntime().exec(new String[]{"su", "-c", "id"});
-                BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String output = in.readLine();
-                if (output != null && output.toLowerCase().contains("uid=0"))
-                    return true;
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (process != null)
-                    process.destroy();
-            }
-        }
-
-        return false;
-    }
-    private TextView createTextView(String text, boolean isHeader) {
+    public TextView createTextView(String text, boolean isHeader) {
         TextView textView = new TextView(this);
         textView.setText(text);
         textView.setPadding(8, 8, 8, 8);
@@ -83,38 +64,38 @@ public class MainActivity extends AppCompatActivity {
         row.addView(pidTextView);
         row.addView(nameTextView);
 
+        if (!isHeader) {
+            // Set a click listener for selectable rows
+            row.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectRow(row);
+                }
+            });
+        }
         // Add the row to the table
         tableLayout.addView(row);
     }
-    private void clearTableExceptHeader(TableLayout tableLayout) {
-        // Remove all rows except the first one (header)
-        int childCount = tableLayout.getChildCount();
-        if (childCount > 1) {
-            tableLayout.removeViews(1, childCount - 1);
-        }
-    }
-    private List<String> getThirdPartyPackages() {
-        List<String> thirdPartyPackages = new ArrayList<>();
-        try {
-            Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", "pm list packages -3"});
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
 
-            while ((line = reader.readLine()) != null) {
-                // Remove "package:" prefix
-                if (line.startsWith("package:")) {
-                    thirdPartyPackages.add(line.replace("package:", "").trim());
-                }
-            }
-            reader.close();
-        } catch (Exception e) {
-            Log.e("MainActivity", "Couldn't retrieve third-party packages", e);
+    private void selectRow(TableRow row) {
+        // Deselect the currently selected row if there is one
+        if (selectedRow != null) {
+            selectedRow.setBackgroundColor(Color.TRANSPARENT);
         }
-        return thirdPartyPackages;
+
+        // Highlight the new row and set it as selected
+        row.setBackgroundColor(Color.LTGRAY);
+        selectedRow = row;
+        Button SelectItem = findViewById(R.id.SelectItem);
+        SelectItem.setEnabled(true);
+
     }
 
 
 
+
+
+    // On create behaviour
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -150,6 +131,9 @@ public class MainActivity extends AppCompatActivity {
         addRow(tableLayout, "USER", "PID", "NAME", true);
         Button AllProcesses = findViewById(R.id.all);
         Button ThirdPartyProcesses =findViewById(R.id.third_party);
+        //Button SelectItem = findViewById(R.id.SelectItem);
+        Button SelectItem = findViewById(R.id.SelectItem);
+        SelectItem.setEnabled(false);
 
         List<String> thirdPartyPackages = getThirdPartyPackages();
 
@@ -212,7 +196,29 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        SelectItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (selectedRow != null) {
+                    TextView userTextView = (TextView) selectedRow.getChildAt(0); // Get the 'USER' column
+                    TextView pidTextView = (TextView) selectedRow.getChildAt(1);  // Get the 'PID' column
+                    TextView nameTextView = (TextView) selectedRow.getChildAt(2); // Get the 'NAME' column
 
+                    String user = userTextView.getText().toString();
+                    String pid = pidTextView.getText().toString();
+                    String processName = nameTextView.getText().toString();
+
+                    // Create an Intent to launch ProcessInteract
+                    Intent intent = new Intent(MainActivity.this, ProcessInteract.class);
+                    intent.putExtra("USER", user);
+                    intent.putExtra("PID", pid);
+                    intent.putExtra("NAME", processName);
+
+                    startActivity(intent);
+                }
+            }
+
+        });
 
     }
 }
