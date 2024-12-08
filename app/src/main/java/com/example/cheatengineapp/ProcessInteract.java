@@ -18,9 +18,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -185,33 +187,40 @@ public class ProcessInteract extends AppCompatActivity {
 
         BinaryUtils binutils = new BinaryUtils();
         try {
+            // Extract binary from assets
             File binaryFile = binutils.extractBinary(this);
             List<MemoryMapping> mappings = getRelevantMappings(pid);
             TextView state = findViewById(R.id.State);
-            state.setText("Reading...");
-            TableLayout tableLayout = findViewById(R.id.tableLayout);
+            state.setText("Preparing to Read...");
 
-            for (MemoryMapping mapping : mappings) {
-                //addRow(tableLayout,mapping.startAddress,mapping.endAddress);
-                // Here we execute the relevant binary
-                Log.i("Offsets in work","offsets: " + mapping.startAddress+ " " +mapping.endAddress);
-                Integer valueSeeked = 27;
-                Log.i("Binary Path",  binaryFile.getAbsolutePath());
-                String command = "su -c " + binaryFile.getAbsolutePath() + " " + pid + " " + mapping.startAddress + " " + mapping.endAddress + " " + valueSeeked;
-                Process process = Runtime.getRuntime().exec(command);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                String line;
-                while((line = reader.readLine()) != null){
-                    addRow(tableLayout,line,false);
+            // Create a file to store offsets
+            File offsetsFile = new File(getCacheDir(), "offsets.csv");
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(offsetsFile))) {
+                for (MemoryMapping mapping : mappings) {
+                    writer.write(mapping.startAddress + "," + mapping.endAddress);
+                    writer.newLine();
                 }
-
             }
+
+            state.setText("Reading...");
+
+            // Execute the binary
+            Integer valueSeeked = 27;
+            String command = "su -c " + binaryFile.getAbsolutePath() + " " + pid + " " + offsetsFile.getAbsolutePath() + " " + valueSeeked;
+            Process process = Runtime.getRuntime().exec(command);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+
+            // Read and display the output
+            TableLayout tableLayout = findViewById(R.id.tableLayout);
+            while ((line = reader.readLine()) != null) {
+                addRow(tableLayout, line, false);
+            }
+
             state.setText("Finished Reading!");
 
-
         } catch (Exception e) {
-            Log.i("Error in main",e.toString());
-            e.printStackTrace();
+            Log.e("Error in main", e.toString(), e);
         }
 
 
