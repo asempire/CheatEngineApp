@@ -2,6 +2,7 @@ package com.example.cheatengineapp;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -34,6 +35,10 @@ import java.util.List;
 
 public class ProcessInteract extends AppCompatActivity {
 
+
+
+    private TableRow selectedRow;
+
     public TextView createTextView(String text, boolean isHeader) {
         TextView textView = new TextView(this);
         textView.setText(text);
@@ -53,10 +58,35 @@ public class ProcessInteract extends AppCompatActivity {
         // Add TextViews to the row
         row.addView(userTextView);
 
-
+        if (!isHeader) {
+            // Set a click listener for selectable rows
+            row.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectRow(row);
+                }
+            });
+        }
         // Add the row to the table
         tableLayout.addView(row);
+
+
     }
+
+    private void selectRow(TableRow row) {
+        // Deselect the currently selected row if there is one
+        if (selectedRow != null) {
+            selectedRow.setBackgroundColor(Color.TRANSPARENT);
+        }
+
+        // Highlight the new row and set it as selected
+        row.setBackgroundColor(Color.LTGRAY);
+        selectedRow = row;
+        Button SelectItem = findViewById(R.id.UpdateItem);
+        SelectItem.setEnabled(true);
+
+    }
+
     public void getAddressesmemread(Integer input, TableLayout tableLayout, TextView state, File binaryFile, String pid, File offsetsFile){
         try{
             state.setText("Reading...");
@@ -271,6 +301,8 @@ public class ProcessInteract extends AppCompatActivity {
         Button back = findViewById(R.id.BackButton);
         Button searchButton = findViewById(R.id.SearchButton);
         searchButton.setEnabled(false); //Initially not enabled
+        Button UpdateItem = findViewById(R.id.UpdateItem);
+        UpdateItem.setEnabled(false);
         TableLayout tableLayout = findViewById(R.id.tableLayout);
         TextInputEditText input = findViewById(R.id.AddressInput);
 
@@ -304,6 +336,7 @@ public class ProcessInteract extends AppCompatActivity {
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
                     // Enable the button if there's text; otherwise, disable it
                     searchButton.setEnabled(s.toString().trim().length() > 0);
+                    UpdateItem.setEnabled(s.toString().trim().length() > 0);
                 }
 
                 @Override
@@ -365,22 +398,6 @@ public class ProcessInteract extends AppCompatActivity {
                     }
                 }
             });
-            /*state.setText("Reading...");
-
-            // Execute the binary
-            Integer valueSeeked = 27;
-            String command = "su -c " + binaryFile.getAbsolutePath() + " " + pid + " " + offsetsFile.getAbsolutePath() + " " + valueSeeked;
-            Process process = Runtime.getRuntime().exec(command);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-
-            // Read and display the output
-            TableLayout tableLayout = findViewById(R.id.tableLayout);
-            while ((line = reader.readLine()) != null) {
-                addRow(tableLayout, line, false);
-            }
-
-            state.setText("Finished Reading!");*/
 
         } catch (Exception e) {
             Log.e("Error in main", e.toString(), e);
@@ -391,6 +408,28 @@ public class ProcessInteract extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 finish();
+            }
+        });
+
+        UpdateItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (input.getText().toString().trim().length() > 0) {
+                    String inputText = input.getText().toString().trim();
+                    input.setText("");
+
+                    if (selectedRow != null) {
+                        TextView address = (TextView) selectedRow.getChildAt(0); // Get the address
+
+                        // Implement Address write functionality
+
+
+                    }
+
+                } else {
+                    Toast.makeText(getApplicationContext(), "Please enter a valid integer!", Toast.LENGTH_SHORT).show();
+                }
+
             }
         });
     }
