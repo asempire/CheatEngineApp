@@ -20,7 +20,7 @@ void read_memory(int fd, long line_address, int value_seeked, int pid) {
 
     if (lseek(fd, line_address, SEEK_SET) == -1) {
         perror("Failed to seek to address");
-        //free(buffer); ChatGPT is tryinng to give me a double free bug?
+        free(buffer);
         return;
     }
 
@@ -28,7 +28,7 @@ void read_memory(int fd, long line_address, int value_seeked, int pid) {
     ssize_t bytes_read = read(fd, buffer, sizeof(int));
     if (bytes_read != sizeof(int)) {
         perror("Failed to read memory");
-        // free(buffer); Again here!
+        free(buffer);
         return;
     }
 

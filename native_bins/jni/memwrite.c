@@ -20,7 +20,7 @@ void write_memory(int fd, long line_address, int value_seeked, int pid) {
 
     if (lseek(fd, line_address, SEEK_SET) == -1) {
         perror("Failed to seek to address");
-        //free(buffer); ChatGPT is tryinng to give me a double free bug?
+        free(buffer); ChatGPT is tryinng to give me a double free bug?
         return;
     }
 
