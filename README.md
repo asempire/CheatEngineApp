@@ -4,12 +4,12 @@ A very simple demo to how applications like CheatEngine, GameKiller, GameHacker.
 
 ## Installation
 
-The structure of the project is basedon android studio so openning it as a project in android studio and building it should be a plug and play.
-Building the app with `apktool` should also work but Ididn't test it.
+The structure of the project is based on android studio so opening it as a project in android studio and building it should be a plug and play.
+Building the app with `apktool` should also work but I didn't test it.
 
 ## Compiling native binaries
 
-If you wish to edit the natie C binaries and recompile them, make sure that you have NDK build tools that could be downloaded from [here](https://developer.android.com/ndk/downloads)
+If you wish to edit the native C binaries and recompile them, make sure that you have NDK build tools that could be downloaded from [here](https://developer.android.com/ndk/downloads)
 Once downloaded navigate to the jni directory and execute the ndk-build in the directory:
 
 ```shell
@@ -19,3 +19,5 @@ $PATH_OF_NDK/ndk/android-ndk-<version>/ndk-build
 ```
 
 # Demo
+
+![demo](./demo_cheatengine.gif)
