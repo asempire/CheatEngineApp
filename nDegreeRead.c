@@ -7,28 +7,40 @@
 #include <sys/wait.h>
 #include <errno.h>
 
-void read_memory_range(int fd, long start_address, long end_address, int value_seeked, int pid) {
-    size_t buffer_size = end_address - start_address;
-    char *buffer = (char *)malloc(buffer_size);
+void read_memory(int fd, long line_address, int value_seeked, int pid) {
+    
+    char *buffer = (char *)malloc(sizeof(int)); //Allocate enough space or an int
     if (!buffer) {
         perror("Failed to allocate buffer");
         return;
     }
 
-    // Read memory content into the buffer
-    if (pread(fd, buffer, buffer_size, start_address) != buffer_size) {
-        perror("Failed to read memory");
-        free(buffer);
+    
+        // seek and read the byte at address
+
+    if (lseek(fd, line_address, SEEK_SET) == -1) {
+        perror("Failed to seek to address");
+        //free(buffer); ChatGPT is tryinng to give me a double free bug?
         return;
     }
 
-    // Search for the value in the buffer
-    for (size_t i = 0; i < buffer_size; i += sizeof(int)) {
-        int current_value = *(int *)(buffer + i);
-        if (current_value == value_seeked) {
-            printf("0x%lx\n",  start_address + i);
-        }
+    // Use read to read the data at the specified address
+    ssize_t bytes_read = read(fd, buffer, sizeof(int));
+    if (bytes_read != sizeof(int)) {
+        perror("Failed to read memory");
+        // free(buffer); Again here!
+        return;
     }
+
+    // Verify if value in buffer is equal to the desird value and print the address if so
+    
+    
+    
+        int current_value = *(int *)(buffer);
+        if (current_value == value_seeked) {
+            printf("0x%lx\n",  line_address);
+        }
+    
 
     free(buffer);
 }
@@ -78,24 +90,17 @@ int main(int argc, char **argv) {
     // Read each line from the offsets file
     char line[256];
     while (fgets(line, sizeof(line), offsets_file)) {
-        // Split the line into start and end addresses
-        char *start_str = strtok(line, ",");
-        char *end_str = strtok(NULL, ",");
-        if (!start_str || !end_str) {
-            fprintf(stderr, "Invalid line format: %s", line);
-            continue;
-        }
+        
 
         // Convert addresses from string to long
-        long start_address = strtol(start_str, NULL, 16);
-        long end_address = strtol(end_str, NULL, 16);
-        if (start_address <= 0 || end_address <= 0 || end_address <= start_address) {
-            fprintf(stderr, "Invalid address range: %s", line);
+        long line_address = strtol(line, NULL, 16);
+        if (line_address <= 0) {
+            fprintf(stderr, "Invalid address: %s", line);
             continue;
         }
 
         // Read and process the memory range
-        read_memory_range(fd, start_address, end_address, value_seeked, pid);
+        read_memory(fd, line_address, value_seeked, pid);
     }
 
     // Clean up

@@ -132,6 +132,26 @@ public class ProcessInteract extends AppCompatActivity {
             Log.e("Error in reading addresses", e.toString(), e);
         }
     }
+    public void writeToAddress(Integer input, String address ,TextView state, File binaryFile, String pid){
+        try{
+            state.setText("Writing...");
+
+            // Execute the binary
+            Integer valueSeeked = input;
+            String command = "su -c " + binaryFile.getAbsolutePath() + " " + pid + " " + address + " " + valueSeeked;
+            Log.i("Write Command","su -c " + binaryFile.getAbsolutePath() + " " + pid + " " + address + " " + valueSeeked);
+            Process process = Runtime.getRuntime().exec(command);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+            // Read and display the output
+
+
+
+            state.setText("Finished Writing!");
+        }catch (Exception e){
+            Log.e("Error in reading addresses", e.toString(), e);
+        }
+    }
 
     public class BinaryUtils {
 
@@ -166,6 +186,23 @@ public class ProcessInteract extends AppCompatActivity {
                     return R.raw.ndegreeread_x86_64;
                 case "riscv64":
                     return R.raw.ndegreeread_riscv64;
+                default:
+                    throw new UnsupportedOperationException("Unsupported architecture: " + arch);
+            }
+        }
+        private  int getBinaryResourceIdmemwrite() throws UnsupportedOperationException {
+            String arch = Build.SUPPORTED_ABIS[0];
+            switch (arch) {
+                case "arm64-v8a":
+                    return R.raw.memwrite_arm64_v8a;
+                case "armeabi-v7a":
+                    return R.raw.memwrite_armeabi_v7a;
+                case "x86":
+                    return R.raw.memwrite_x86;
+                case "x86_64":
+                    return R.raw.memwrite_x86_64;
+                case "riscv64":
+                    return R.raw.memwrite_riscv64;
                 default:
                     throw new UnsupportedOperationException("Unsupported architecture: " + arch);
             }
@@ -217,7 +254,31 @@ public class ProcessInteract extends AppCompatActivity {
             Log.i("extractBinary","Extracted binary");
             return binaryFile;
         }
+        public  File extractBinarymemwrite(Context context) throws Exception {
+            int resourceId = getBinaryResourceIdmemwrite();
+
+            // Copy binary to internal storage
+            File binaryFile = new File(context.getFilesDir(), "memwrite");
+            InputStream in = context.getResources().openRawResource(resourceId);
+            FileOutputStream out = new FileOutputStream(binaryFile);
+
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+
+            in.close();
+            out.flush();
+            out.close();
+
+            // Make the binary executable
+            binaryFile.setExecutable(true);
+            Log.i("extractBinary","Extracted binary");
+            return binaryFile;
+        }
     }
+
 
 
     public static class MemoryMapping {
@@ -311,6 +372,7 @@ public class ProcessInteract extends AppCompatActivity {
             // Extract binary from assets
             File binaryFilememread = binutils.extractBinarymemread(this);
             File binaryFilenDegreeRead = binutils.extractBinarynDegreeRead(this);
+            File binaryFilememwrite =  binutils.extractBinarymemwrite(this);
             List<MemoryMapping> mappings = getRelevantMappings(pid);
             TextView state = findViewById(R.id.State);
             state.setText("Preparing to Read...");
@@ -398,6 +460,30 @@ public class ProcessInteract extends AppCompatActivity {
                     }
                 }
             });
+            UpdateItem.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (input.getText().toString().trim().length() > 0) {
+                        String inputText = input.getText().toString().trim();
+                        input.setText("");
+
+                        if (selectedRow != null) {
+                            TextView address = (TextView) selectedRow.getChildAt(0); // Get the address
+                            String addr = address.getText().toString();
+                            // Implement Address write functionality
+                            TextView state = findViewById(R.id.State);
+                            writeToAddress(Integer.valueOf(inputText),addr,state,binaryFilememwrite,pid);
+
+
+
+                        }
+
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Please enter a valid integer!", Toast.LENGTH_SHORT).show();
+                    }
+
+                }
+            });
 
         } catch (Exception e) {
             Log.e("Error in main", e.toString(), e);
@@ -411,26 +497,6 @@ public class ProcessInteract extends AppCompatActivity {
             }
         });
 
-        UpdateItem.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (input.getText().toString().trim().length() > 0) {
-                    String inputText = input.getText().toString().trim();
-                    input.setText("");
 
-                    if (selectedRow != null) {
-                        TextView address = (TextView) selectedRow.getChildAt(0); // Get the address
-
-                        // Implement Address write functionality
-
-
-                    }
-
-                } else {
-                    Toast.makeText(getApplicationContext(), "Please enter a valid integer!", Toast.LENGTH_SHORT).show();
-                }
-
-            }
-        });
     }
 }
